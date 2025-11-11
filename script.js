@@ -1,136 +1,173 @@
- document.addEventListener('DOMContentLoaded', function() {
-            // DOM elements
-            const cityInput = document.getElementById('cityInput');
-            const searchBtn = document.getElementById('searchBtn');
-            const locationEl = document.getElementById('location');
-            const dateTimeEl = document.getElementById('dateTime');
-            const temperatureEl = document.getElementById('temperature');
-            const descriptionEl = document.getElementById('description');
-            const weatherIconEl = document.getElementById('weatherIcon');
-            const feelsLikeEl = document.getElementById('feelsLike');
-            const humidityEl = document.getElementById('humidity');
-            const windSpeedEl = document.getElementById('windSpeed');
-            const loadingEl = document.getElementById('loading');
-            const errorMessageEl = document.getElementById('errorMessage');
+// ✅ Open-Meteo Weather API (No Key Needed)
+const API_URL = 'https://api.open-meteo.com/v1/forecast';
 
-            // Default city for initial load
-            const defaultCity = 'New Delhi';
-            let currentCity = defaultCity;
+document.addEventListener('DOMContentLoaded', function () {
+  // DOM Elements
+  const cityInput = document.getElementById('cityInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const locationEl = document.getElementById('location');
+  const dateTimeEl = document.getElementById('dateTime');
+  const temperatureEl = document.getElementById('temperature');
+  const descriptionEl = document.getElementById('description');
+  const weatherIconEl = document.getElementById('weatherIcon');
+  const feelsLikeEl = document.getElementById('feelsLike');
+  const humidityEl = document.getElementById('humidity');
+  const windSpeedEl = document.getElementById('windSpeed');
+  const loadingEl = document.getElementById('loading');
+  const errorMessageEl = document.getElementById('errorMessage');
 
-            // Initialize with default city
-            getWeatherData(defaultCity);
+  const defaultCity = 'New Delhi';
+  getWeatherData(defaultCity);
 
-            // Event listeners
-            searchBtn.addEventListener('click', () => {
-                const city = cityInput.value.trim();
-                if (city) {
-                    currentCity = city;
-                    getWeatherData(city);
-                }
-            });
+  // Event Listeners
+  searchBtn.addEventListener('click', () => {
+    const city = cityInput.value.trim();
+    if (city) getWeatherData(city);
+  });
 
-            // cityInput.addEventListener('keypress', (e) => {
-            //     if (e.key === 'Enter') {
-            //         const city = cityInput.value.trim();
-            //         if (city) {
-            //             currentCity = city;
-            //             getWeatherData(city);
-            //         }
-            //     }
-            // });
+  cityInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const city = cityInput.value.trim();
+      if (city) getWeatherData(city);
+    }
+  });
 
-            // Function to get weather data
-            async function getWeatherData(city) {
-                // Show loading state
-                loadingEl.style.display = 'block';
-                errorMessageEl.style.display = 'none';
-                
-                try {
-                    // Using a free weather API (OpenWeatherMap)
-                    // Note: In a real application, you would use your own API key
-                    // For demo purposes, we'll simulate data since we can't make actual API calls
-                    const weatherData = await fetchWeatherData(city);
-                    
-                    // Update the UI with weather data
-                    updateWeatherUI(weatherData);
-                    
-                } catch (error) {
-                    console.error('Error fetching weather data:', error);
-                    loadingEl.style.display = 'none';
-                    errorMessageEl.style.display = 'block';
-                }
-            }
+  // ✅ Main Weather Data Function
+  async function getWeatherData(city) {
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (errorMessageEl) {
+      errorMessageEl.style.display = 'none';
+      errorMessageEl.textContent = '';
+    }
 
-            // Simulated weather data function (since we can't make actual API calls)
-            async function fetchWeatherData(city) {
-                // Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Mock weather data for demonstration
-                const mockWeatherData = {
-                    name: city,
-                    main: {
-                        temp: Math.floor(Math.random() * 30) + 10, // Random temp between 10-40°C
-                        feels_like: Math.floor(Math.random() * 10) + 5, // Random feels like value
-                        humidity: Math.floor(Math.random() * 50) + 30 // Random humidity between 30-80%
-                    },
-                    weather: [{
-                        main: ['Clear', 'Clouds', 'Rain', 'Drizzle', 'Thunderstorm', 'Snow'][Math.floor(Math.random() * 6)],
-                        description: ['clear sky', 'few clouds', 'light rain', 'drizzle', 'thunderstorm', 'snow'][Math.floor(Math.random() * 6)],
-                        icon: ['01d', '02d', '10d', '09d', '11d', '13d'][Math.floor(Math.random() * 6)]
-                    }],
-                    wind: {
-                        speed: Math.floor(Math.random() * 20) + 5 // Random wind speed between 5-25 km/h
-                    }
-                };
-                
-                return mockWeatherData;
-            }
+    try {
+      const coordinates = await getCoordinates(city);
+      if (!coordinates) throw new Error('City not found');
 
-            // Function to update UI with weather data
-            function updateWeatherUI(data) {
-                // Hide loading and error states
-                loadingEl.style.display = 'none';
-                errorMessageEl.style.display = 'none';
-                
-                // Update location
-                locationEl.textContent = data.name;
-                
-                // Update date and time
-                const now = new Date();
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                dateTimeEl.textContent = now.toLocaleDateString('en-US', options);
-                
-                // Update temperature
-                temperatureEl.textContent = `${Math.round(data.main.temp)}°C`;
-                
-                // Update description
-                descriptionEl.textContent = data.weather[0].description;
-                
-                // Update weather icon
-                const iconCode = data.weather[0].icon;
-                weatherIconEl.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-                
-                // Update additional details
-                feelsLikeEl.textContent = `${Math.round(data.main.feels_like)}°C`;
-                humidityEl.textContent = `${data.main.humidity}%`;
-                windSpeedEl.textContent = `${data.wind.speed} km/h`;
-                
-                // Apply weather class for styling
-                const weatherMain = data.weather[0].main.toLowerCase();
-                document.querySelector('.container').className = 'container ' + weatherMain;
-                
-                // Set appropriate icon color based on weather condition
-                if (weatherMain === 'clear' || weatherMain === 'sun') {
-                    weatherIconEl.style.color = '#feca57';
-                } else if (weatherMain === 'clouds') {
-                    weatherIconEl.style.color = '#dfe6e9';
-                } else if (weatherMain === 'rain' || weatherMain === 'drizzle') {
-                    weatherIconEl.style.color = '#b2bec3';
-                } else if (weatherMain === 'snow') {
-                    weatherIconEl.style.color = '#e8f4fd';
-                } else if (weatherMain === 'thunderstorm') {
-                    weatherIconEl.style.color = '#6c5ce7';
-                }
-            }
-        });
+      const weatherData = await fetchWeatherData(coordinates.lat, coordinates.lon);
+      updateWeatherUI(city, weatherData);
+    } catch (error) {
+      console.error(error);
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (errorMessageEl) {
+        errorMessageEl.style.display = 'block';
+        errorMessageEl.textContent = error.message || 'Unable to fetch weather data.';
+      }
+    }
+  }
+
+  // ✅ Get Coordinates (Improved for villages)
+  async function getCoordinates(city) {
+    try {
+      // 1st try: City + India (for small places)
+      let response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city + ', India')}&format=json&limit=1`
+      );
+      let data = await response.json();
+
+      // 2nd try: plain city if still not found
+      if (!data || !data.length) {
+        response = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`
+        );
+        data = await response.json();
+      }
+
+      // 3rd try: fallback to Sitapur if not found
+      if (!data || !data.length) {
+        console.warn(`No coordinates found for ${city}, using Sitapur fallback`);
+        return { lat: 27.57, lon: 80.68 };
+      }
+
+      return { lat: data[0].lat, lon: data[0].lon };
+    } catch (err) {
+      console.error('Error fetching coordinates:', err);
+      return { lat: 27.57, lon: 80.68 }; // fallback Sitapur
+    }
+  }
+
+  // ✅ Fetch Weather Data from Open-Meteo
+  async function fetchWeatherData(lat, lon) {
+    const url = `${API_URL}?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok || !data.current) throw new Error('Weather data unavailable');
+    return data;
+  }
+
+  // ✅ Map Weather Codes to Text
+  function mapWeatherCodeToText(code) {
+    const mapping = {
+      0: 'Clear Sky',
+      1: 'Mainly Clear',
+      2: 'Partly Cloudy',
+      3: 'Overcast',
+      45: 'Fog',
+      48: 'Rime Fog',
+      51: 'Light Drizzle',
+      53: 'Drizzle',
+      55: 'Dense Drizzle',
+      61: 'Light Rain',
+      63: 'Rain',
+      65: 'Heavy Rain',
+      71: 'Light Snow',
+      73: 'Snow',
+      75: 'Heavy Snow',
+      95: 'Thunderstorm',
+      99: 'Thunderstorm with Hail'
+    };
+    return mapping[code] || 'Unknown';
+  }
+
+  // ✅ Update the UI
+  function updateWeatherUI(city, data) {
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (errorMessageEl) errorMessageEl.style.display = 'none';
+
+    const current = data.current;
+    if (!current) throw new Error('No weather data found');
+
+    const temp = current.temperature_2m;
+    const feelsLike = current.apparent_temperature;
+    const humidity = current.relative_humidity_2m;
+    const windSpeed = Math.round(current.wind_speed_10m);
+    const weatherCode = current.weather_code;
+    const weatherText = mapWeatherCodeToText(weatherCode);
+
+    // ✅ Update values
+    locationEl.textContent = city.charAt(0).toUpperCase() + city.slice(1);
+    dateTimeEl.textContent = new Date().toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+    temperatureEl.textContent = `${Math.round(temp)}°C`;
+    feelsLikeEl.textContent = `${Math.round(feelsLike)}°C`;
+    humidityEl.textContent = `${Math.round(humidity)}%`;
+    windSpeedEl.textContent = `${windSpeed} km/h`;
+    descriptionEl.textContent = weatherText;
+
+    const weatherMain = weatherText.toLowerCase();
+
+    // ✅ Dynamic Icons
+    if (weatherIconEl) {
+      if (weatherMain.includes('rain')) {
+        weatherIconEl.src = 'https://cdn-icons-png.flaticon.com/512/1163/1163624.png';
+      } else if (weatherMain.includes('cloud')) {
+        weatherIconEl.src = 'https://cdn-icons-png.flaticon.com/512/414/414825.png';
+      } else if (weatherMain.includes('clear')) {
+        weatherIconEl.src = 'https://cdn-icons-png.flaticon.com/512/869/869869.png';
+      } else if (weatherMain.includes('snow')) {
+        weatherIconEl.src = 'https://cdn-icons-png.flaticon.com/512/2315/2315309.png';
+      } else if (weatherMain.includes('thunder')) {
+        weatherIconEl.src = 'https://cdn-icons-png.flaticon.com/512/1779/1779940.png';
+      } else if (weatherMain.includes('fog')) {
+        weatherIconEl.src = 'https://cdn-icons-png.flaticon.com/512/4005/4005901.png';
+      } else {
+        weatherIconEl.src = 'https://cdn-icons-png.flaticon.com/512/4052/4052984.png';
+      }
+      weatherIconEl.alt = weatherMain;
+    }
+  }
+});
