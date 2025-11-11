@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ✅ Smart Geocoding (handles spaces + spelling)
+  // ✅ Geocoding (English only)
   async function getCoordinates(city) {
     const normalized = city
       .replace(/\s+/, " ")
@@ -74,14 +74,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     for (let query of variations) {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          query
+        )}&format=json&limit=1&accept-language=en`
       );
       const data = await response.json();
       if (data && data.length)
         return {
           lat: data[0].lat,
           lon: data[0].lon,
-          name: data[0].display_name.split(",")[0],
+          // ✅ Remove non-English characters
+          name: data[0].display_name
+            .split(",")[0]
+            .replace(/[^\x00-\x7F]/g, "")
+            .trim(),
         };
     }
 
